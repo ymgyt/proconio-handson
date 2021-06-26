@@ -1,3 +1,6 @@
+#![allow(unused_variables)]
+#![allow(unused_mut)]
+
 use std::marker::PhantomData;
 
 // #![feature(trace_macros)]
@@ -156,6 +159,24 @@ impl<'a> From<&'a str> for OnceSource<std::io::BufReader<&'a [u8]>> {
     }
 }
 
+enum Chars {}
+
+impl Readable for Chars {
+    type Output = Vec<char>;
+    fn read<R: std::io::BufRead, S: Source<R>>(source: &mut S) -> Vec<char> {
+        source.next_token_unwrap().chars().collect()
+    }
+}
+
+enum Bytes {}
+
+impl Readable for Bytes {
+    type Output = Vec<u8>;
+    fn read<R: std::io::BufRead, S: Source<R>>(source: &mut S) -> Vec<u8> {
+        source.next_token_unwrap().bytes().collect()
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
@@ -172,18 +193,49 @@ mod tests {
 
         assert_eq!(n, 10);
     }
+
+    #[test]
+    fn empty() {
+        let source = OnceSource::from("");
+
+        input ! {
+            from source,
+        }
+    }
+
+    #[test]
+    fn marker_chars() {
+        let source = OnceSource::from("abcd");
+
+        input! {
+            from source,
+            c: Chars,
+        };
+
+        assert_eq!(c, vec!['a','b','c','d']);
+    }
+
+    #[test]
+    fn marker_bytes() {
+        let source = OnceSource::from("ABC");
+
+        input! {
+            from source,
+            b: Bytes,
+        };
+
+        assert_eq!(b, vec![0x41,0x42,0x43]);
+    }
 }
 
 fn main() {
-    // stdin: 10\n-20\n
+    let source = OnceSource::from(" string!");
 
-    input!{
-        a: u8,
-        b: i8,
+    input! {
+        from source,
+        s: String,
     }
 
-    assert_eq!(a, 10);
-    assert_eq!(b, -20);
-    println!("a: {}, b: {}", a,b);
+    println!("{}", s);
 }
 
