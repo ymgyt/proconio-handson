@@ -3,26 +3,14 @@ use std::marker::PhantomData;
 // #![feature(trace_macros)]
 // trace_macros!(true);
 
-// lazy_static! {
-//     static ref STDIN_SOURCE: std::sync::Mutex<OnceSource<std::io::BufReader<std::io::Stdin>>> =
-//         std::sync::Mutex::new(OnceSource::new(std::io::BufReader::new(std::io::stdin())));
-// }
+lazy_static::lazy_static! {
+    static ref STDIN_SOURCE: std::sync::Mutex<OnceSource<std::io::BufReader<std::io::Stdin>>> =
+        std::sync::Mutex::new(OnceSource::new(std::io::BufReader::new(std::io::stdin())));
+}
 
 macro_rules! input {
     // terminator
     (@from [$source:expr] @rest) => {};
-
-    (from $source:expr, $($rest:tt)*) => {
-       let mut s = $source;
-       input! {
-           @from [&mut s]
-           @rest $($rest)*
-       }
-    };
-
-    // ($($rest:tt)*) => {
-    //
-    // }
 
     (@from [$source:expr] @rest $($rest:tt)*) => {
         input! {
@@ -50,6 +38,23 @@ macro_rules! input {
     };
     (@from [$source:expr] @mut [$($mut:tt)?] @var $var:tt @kind [$($kind:tt)*] @rest $tt:tt $($rest:tt)*) => {
         input!(@from [$source] @mut [$($mut)*] @var $var @kind [$($kind)* $tt] @rest $($rest)*);
+    };
+
+    (from $source:expr, $($rest:tt)*) => {
+       let mut s = $source;
+       input! {
+           @from [&mut s]
+           @rest $($rest)*
+       }
+    };
+
+    ($($rest:tt)*) => {
+        let mut locked_stdin = STDIN_SOURCE.lock().unwrap();
+        input! {
+            @from [&mut *locked_stdin]
+            @rest $($rest)*
+        }
+        drop(locked_stdin); // release the lock
     };
 }
 
@@ -170,13 +175,15 @@ mod tests {
 }
 
 fn main() {
-    let source = OnceSource::from("10 -20 300\n");
+    // stdin: 10\n-20\n
 
-    input! {
-            from source,
-            a: u8,
-            b: i8,
-            c: i32,
+    input!{
+        a: u8,
+        b: i8,
     }
+
+    assert_eq!(a, 10);
+    assert_eq!(b, -20);
+    println!("a: {}, b: {}", a,b);
 }
 
