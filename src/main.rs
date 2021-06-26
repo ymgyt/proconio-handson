@@ -3,8 +3,8 @@
 
 use std::marker::PhantomData;
 
-// # ![feature(trace_macros)]
-// trace_macros!(true);
+# ![feature(trace_macros)]
+trace_macros!(true);
 
 lazy_static::lazy_static! {
     static ref STDIN_SOURCE: std::sync::Mutex<OnceSource<std::io::BufReader<std::io::Stdin>>> =
@@ -267,15 +267,18 @@ mod tests {
 }
 
 fn main() {
-    let source = OnceSource::from("3 1 2 3");
+    let source = OnceSource::from("1 2 3 4 5 6 7 8 9");
 
     input! {
         from source,
-        n: usize,
-        a: [i32; n],
+        m: [[i32; 3]; 3],
     }
 
-    assert_eq!(a, [1, 2, 3]);
-    println!("{:?}", a);
+    assert_eq!(m, vec![
+        vec![1,2,3],
+        vec![4,5,6],
+        vec![7,8,9],
+    ]);
+    println!("{:?}", m);
 }
 
