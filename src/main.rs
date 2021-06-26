@@ -3,8 +3,8 @@
 
 use std::marker::PhantomData;
 
-# ![feature(trace_macros)]
-trace_macros!(true);
+// # ![feature(trace_macros)]
+// trace_macros!(true);
 
 lazy_static::lazy_static! {
     static ref STDIN_SOURCE: std::sync::Mutex<OnceSource<std::io::BufReader<std::io::Stdin>>> =
@@ -68,6 +68,7 @@ macro_rules! read_value {
     (@source [$source:expr] @kind [[$($kind:tt)*]]) => {
         read_value!(@array @source [$source] @kind [] @rest $($kind)*)
     };
+    // jagged arm
     (@array @source [$source:expr] @kind [$($kind:tt)*] @rest) => {{
         let len = <usize as Readable>::read($source);
         read_value!(@source [$source] @kind [[$($kind)*; len]])
@@ -264,21 +265,39 @@ mod tests {
 
         assert_eq!(a, [1, 2, 3]);
     }
+
+    #[test]
+    fn jagged_array_1() {
+        let source = OnceSource::from("3  3 1 2 3  0  2 1 2");
+
+        input! {
+        from source,
+        n: usize,
+        a: [[i32]; n],
+    }
+
+        assert_eq!(a, vec![
+            vec![1,2,3],
+            vec![],
+            vec![1,2],
+        ]);
+    }
 }
 
 fn main() {
-    let source = OnceSource::from("1 2 3 4 5 6 7 8 9");
+    let source = OnceSource::from("3  3 1 2 3  0  2 1 2");
 
     input! {
         from source,
-        m: [[i32; 3]; 3],
+        n: usize,
+        a: [[i32]; n],
     }
 
-    assert_eq!(m, vec![
+    assert_eq!(a, vec![
         vec![1,2,3],
-        vec![4,5,6],
-        vec![7,8,9],
+        vec![],
+        vec![1,2],
     ]);
-    println!("{:?}", m);
+    println!("{:?}", a);
 }
 
