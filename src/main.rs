@@ -3,7 +3,7 @@
 
 use std::marker::PhantomData;
 
-// #![feature(trace_macros)]
+// # ![feature(trace_macros)]
 // trace_macros!(true);
 
 lazy_static::lazy_static! {
@@ -23,6 +23,7 @@ macro_rules! input {
         }
     };
 
+    // parse variable pattern
     (@from [$source:expr] @mut [$($mut:tt)?] @rest $var:tt: $($rest:tt)*) => {
         input! {
             @from [$source]
@@ -32,6 +33,7 @@ macro_rules! input {
             @rest $($rest)*
         }
     };
+
     (@from [$source:expr] @mut [$($mut:tt)?] @var $var:tt @kind [$($kind:tt)*] @rest) => {
         let $($mut)* $var = read_value!(@source [$source] @kind [$($kind)*]);
     };
@@ -62,6 +64,28 @@ macro_rules! input {
 }
 
 macro_rules! read_value {
+    // array
+    (@source [$source:expr] @kind [[$($kind:tt)*]]) => {
+        read_value!(@array @source [$source] @kind [] @rest $($kind)*)
+    };
+    (@array @source [$source:expr] @kind [$($kind:tt)*] @rest) => {{
+        let len = <usize as Readable>::read($source);
+        read_value!(@source [$source] @kind [[$($kind)*; len]])
+    }};
+    (@array @source [$source:expr] @kind [$($kind:tt)*] @rest ; $($rest:tt)*) => {
+        read_value!(@array @source [$source] @kind [$($kind)*] @len [$($rest)*])
+    };
+    (@array @source [$source:expr] @kind [$($kind:tt)*] @rest $tt:tt $($rest:tt)*) => {
+        read_value!(@array @source [$source] @kind [$($kind)* $tt] @rest $($rest)*)
+    };
+    (@array @source [$source:expr] @kind [$($kind:tt)*] @len [$($len:tt)*]) => {{
+        let len = $($len)*;
+        (0..len)
+            .map(|_| read_value!(@source [$source] @kind [$($kind)*]))
+            .collect::<Vec<_>>()
+    }};
+
+
     (@source [$source:expr] @kind [$kind:ty]) => {
         <$kind as Readable>::read($source)
     };
@@ -198,7 +222,7 @@ mod tests {
     fn empty() {
         let source = OnceSource::from("");
 
-        input ! {
+        input! {
             from source,
         }
     }
@@ -210,9 +234,10 @@ mod tests {
         input! {
             from source,
             c: Chars,
-        };
+        }
+        ;
 
-        assert_eq!(c, vec!['a','b','c','d']);
+        assert_eq!(c, vec!['a', 'b', 'c', 'd']);
     }
 
     #[test]
@@ -222,20 +247,35 @@ mod tests {
         input! {
             from source,
             b: Bytes,
-        };
+        }
+        ;
 
-        assert_eq!(b, vec![0x41,0x42,0x43]);
+        assert_eq!(b, vec![0x41, 0x42, 0x43]);
+    }
+
+    #[test]
+    fn array_1() {
+        let source = OnceSource::from("1 2 3");
+
+        input! {
+        from source,
+        a: [i32; 3],
+    }
+
+        assert_eq!(a, [1, 2, 3]);
     }
 }
 
 fn main() {
-    let source = OnceSource::from(" string!");
+    let source = OnceSource::from("3 1 2 3");
 
     input! {
         from source,
-        s: String,
+        n: usize,
+        a: [i32; n],
     }
 
-    println!("{}", s);
+    assert_eq!(a, [1, 2, 3]);
+    println!("{:?}", a);
 }
 
