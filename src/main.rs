@@ -78,6 +78,35 @@ macro_rules! input {
         drop(locked_stdin); // release the lock
     };
 }
+/*
+macro_rules! read_value {
+    // ...
+    // tuple
+    (@source [$source:expr] @kind [($($kinds:tt)*)]) => {
+        read_value!(@tuple @source [$source] @kinds [] @current [] @rest $($kinds)*)
+    };
+    (@tuple @source [$source:expr] @kinds [$([$($kind:tt)*])*] @current [] @rest) => {
+        (
+            $(read_value!(@source [$source] @kind [$($kind)*]),)*
+        )
+    };
+    (@tuple @source [$source:expr] @kinds [$($kinds:tt)*] @current [$($curr:tt)*] @rest) => {
+        read_value!(@tuple @source [$source] @kinds [$($kinds)* [$($curr)*]] @current [] @rest)
+    };
+    (@tuple @source [$source:expr] @kinds [$($kinds:tt)*] @current [$($curr:tt)*] @rest, $($rest:tt)*) => {
+        read_value!(@tuple @source [$source] @kinds [$($kinds)* [$($curr)*]] @current [] @rest $($rest)*)
+    };
+    (@tuple @source [$source:expr] @kinds [$($kinds:tt)*] @current [$($curr:tt)*] @rest $tt:tt $($rest:tt)*) => {
+        read_value!(@tuple @source [$source] @kinds [$($kinds)*] @current [$($curr)* $tt] @rest $($rest)*)
+    };
+
+
+    (@source [$source:expr] @kind [$kind:ty]) => {
+        <$kind as Readable>::read($source)
+    };
+}
+
+ */
 
 macro_rules! read_value {
     // array
@@ -102,6 +131,25 @@ macro_rules! read_value {
             .collect::<Vec<_>>()
     }};
 
+    // tuple
+    (@source [$source:expr] @kind [($($kinds:tt)*)]) => {
+        read_value!(@tuple @source [$source] @kinds [] @current [] @rest $($kinds)*)
+    };
+    (@tuple @source [$source:expr] @kinds [$([$($kind:tt)*])*] @current [] @rest) => {
+        (
+            $(read_value!(@source [$source] @kind [$($kind)*]),)*
+        )
+    };
+    (@tuple @source [$source:expr] @kinds [$($kinds:tt)*] @current [$($curr:tt)*] @rest) => {
+        read_value!(@tuple @source [$source] @kinds [$($kinds)* [$($curr)*]] @current [] @rest)
+    };
+    (@tuple @source [$source:expr] @kinds [$($kinds:tt)*] @current [$($curr:tt)*] @rest, $($rest:tt)*) => {
+        read_value!(@tuple @source [$source] @kinds [$($kinds)* [$($curr)*]] @current [] @rest $($rest)*)
+    };
+    (@tuple @source [$source:expr] @kinds [$($kinds:tt)*] @current [$($curr:tt)*] @rest $tt:tt $($rest:tt)*) => {
+        read_value!(@tuple @source [$source] @kinds [$($kinds)*] @current [$($curr)* $tt] @rest $($rest)*)
+    };
+
 
     (@source [$source:expr] @kind [$kind:ty]) => {
         <$kind as Readable>::read($source)
@@ -118,10 +166,10 @@ pub trait Source<R: std::io::BufRead> {
     /// Force gets a whitespace-splitted next token.
     fn next_token_unwrap(&mut self) -> &str {
         self.next_token().expect(concat!(
-        "failed to get the next token; ",
-        "maybe reader reached an end of input. ",
-        "ensure that arguments for `input!` macro is correctly ",
-        "specified to match the problem input."
+            "failed to get the next token; ",
+            "maybe reader reached an end of input. ",
+            "ensure that arguments for `input!` macro is correctly ",
+            "specified to match the problem input."
         ))
     }
 }
@@ -133,8 +181,8 @@ pub trait Readable {
 }
 
 impl<T: std::str::FromStr> Readable for T
-    where
-        T::Err: std::fmt::Debug,
+where
+    T::Err: std::fmt::Debug,
 {
     type Output = T;
     fn read<R: std::io::BufRead, S: Source<R>>(source: &mut S) -> T {
@@ -143,10 +191,10 @@ impl<T: std::str::FromStr> Readable for T
             Ok(v) => v,
             Err(e) => panic!(
                 concat!(
-                "failed to parse the input `{input}` ",
-                "to the value of type `{ty}`: {err:?}; ",
-                "ensure that the input format is collectly specified ",
-                "and that the input value must handle specified type.",
+                    "failed to parse the input `{input}` ",
+                    "to the value of type `{ty}`: {err:?}; ",
+                    "ensure that the input format is collectly specified ",
+                    "and that the input value must handle specified type.",
                 ),
                 input = token,
                 ty = std::any::type_name::<T>(),
@@ -165,8 +213,7 @@ struct OnceSource<R: std::io::BufRead> {
 impl<R: std::io::BufRead> OnceSource<R> {
     fn new(mut source: R) -> OnceSource<R> {
         let mut context = String::new();
-        source.read_to_string(&mut context)
-            .unwrap();
+        source.read_to_string(&mut context).unwrap();
 
         let context = context.into_boxed_str();
 
@@ -218,7 +265,6 @@ impl Readable for Bytes {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -251,8 +297,7 @@ mod tests {
         input! {
             from source,
             c: Chars,
-        }
-        ;
+        };
 
         assert_eq!(c, vec!['a', 'b', 'c', 'd']);
     }
@@ -264,8 +309,7 @@ mod tests {
         input! {
             from source,
             b: Bytes,
-        }
-        ;
+        };
 
         assert_eq!(b, vec![0x41, 0x42, 0x43]);
     }
@@ -275,9 +319,9 @@ mod tests {
         let source = OnceSource::from("1 2 3");
 
         input! {
-        from source,
-        a: [i32; 3],
-    }
+            from source,
+            a: [i32; 3],
+        }
 
         assert_eq!(a, [1, 2, 3]);
     }
@@ -287,16 +331,12 @@ mod tests {
         let source = OnceSource::from("3  3 1 2 3  0  2 1 2");
 
         input! {
-        from source,
-        n: usize,
-        a: [[i32]; n],
-    }
+            from source,
+            n: usize,
+            a: [[i32]; n],
+        }
 
-        assert_eq!(a, vec![
-            vec![1, 2, 3],
-            vec![],
-            vec![1, 2],
-        ]);
+        assert_eq!(a, vec![vec![1, 2, 3], vec![], vec![1, 2],]);
     }
 
     #[test]
@@ -310,19 +350,30 @@ mod tests {
         n += 10;
         assert_eq!(n, 20);
     }
+
+    #[test]
+    fn tuple_1() {
+        let source = OnceSource::from("2 10 X 20 Y");
+        input! {
+                from source,
+                n: usize,
+                ts: [(i8, String); n],
+        }
+
+        assert_eq!(ts, vec![(10, String::from("X")), (20, String::from("Y")),]);
+    }
 }
 
 fn main() {
-    let source = OnceSource::from("10");
+    let source = OnceSource::from("2 10 X 20 Y");
     trace_macros!(true);
     input! {
         from source,
-        mut n: i8,
+        n: usize,
+        ts: [(i8, String); n],
     }
     trace_macros!(false);
 
-    n += 10;
-
-    println!("n: {}", n);
+    assert_eq!(ts, vec![(10, String::from("X")), (20, String::from("Y")),]);
+    println!("ts: {:?}", ts);
 }
-
