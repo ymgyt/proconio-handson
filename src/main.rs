@@ -285,19 +285,27 @@ mod tests {
 }
 
 fn main() {
-    let source = OnceSource::from("3  3 1 2 3  0  2 1 2");
+    // let source = OnceSource::from("3  3 1 2 3  0  2 1 2");
+    //
+    // input! {
+    //     from source,
+    //     n: usize,
+    //     a: [[i32]; n],
+    // }
+    //
+    // assert_eq!(a, vec![
+    //     vec![1,2,3],
+    //     vec![],
+    //     vec![1,2],
+    // ]);
+    // println!("{:?}", a);
 
     input! {
-        from source,
-        n: usize,
-        a: [[i32]; n],
+        n: u8,
+        m: u8,
+        a: [[i32; m]; n],
     }
 
-    assert_eq!(a, vec![
-        vec![1,2,3],
-        vec![],
-        vec![1,2],
-    ]);
-    println!("{:?}", a);
+    println!("n: {}, m: {}, a: {:?}", n,m,a);
 }
 
