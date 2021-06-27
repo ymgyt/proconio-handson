@@ -1,9 +1,9 @@
+#![feature(trace_macros)]
 #![allow(unused_variables)]
 #![allow(unused_mut)]
 
 use std::marker::PhantomData;
 
-// # ![feature(trace_macros)]
 // trace_macros!(true);
 
 lazy_static::lazy_static! {
@@ -11,9 +11,25 @@ lazy_static::lazy_static! {
         std::sync::Mutex::new(OnceSource::new(std::io::BufReader::new(std::io::stdin())));
 }
 
+/*
+(@from [$source:expr] @mut [$($mut:tt)?] @var $var:tt @kind [$($kind:tt)*] @rest) => {
+    let $($mut)* $var = read_value!(@source [$source] @kind [$($kind)*]);
+};
+
+ */
+
 macro_rules! input {
     // terminator
     (@from [$source:expr] @rest) => {};
+
+    // parse mutability
+    (@from [$source:expr] @rest mut $($rest:tt)*) => {
+        input! {
+            @from [$source]
+            @mut [mut]
+            @rest $($rest)*
+        }
+    };
 
     (@from [$source:expr] @rest $($rest:tt)*) => {
         input! {
@@ -277,35 +293,36 @@ mod tests {
     }
 
         assert_eq!(a, vec![
-            vec![1,2,3],
+            vec![1, 2, 3],
             vec![],
-            vec![1,2],
+            vec![1, 2],
         ]);
+    }
+
+    #[test]
+    fn mut_1() {
+        let source = OnceSource::from("10");
+        input! {
+            from source,
+            mut n: i8,
+        }
+
+        n += 10;
+        assert_eq!(n, 20);
     }
 }
 
 fn main() {
-    // let source = OnceSource::from("3  3 1 2 3  0  2 1 2");
-    //
-    // input! {
-    //     from source,
-    //     n: usize,
-    //     a: [[i32]; n],
-    // }
-    //
-    // assert_eq!(a, vec![
-    //     vec![1,2,3],
-    //     vec![],
-    //     vec![1,2],
-    // ]);
-    // println!("{:?}", a);
-
+    let source = OnceSource::from("10");
+    trace_macros!(true);
     input! {
-        n: u8,
-        m: u8,
-        a: [[i32; m]; n],
+        from source,
+        mut n: i8,
     }
+    trace_macros!(false);
 
-    println!("n: {}, m: {}, a: {:?}", n,m,a);
+    n += 10;
+
+    println!("n: {}", n);
 }
 
